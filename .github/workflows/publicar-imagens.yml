@@ -1,0 +1,40 @@
+name: Publicar capturas do CIVIA Guardian
+on:
+  push:
+    paths:
+      - '.github/workflows/publicar-imagens.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  imagens:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extrair capturas originais do relatório
+        run: |
+          python3 - <<'PY'
+          import os, zipfile
+          origem = "IOT_CIVIA_GS_Relatorio.docx"
+          pasta = "images"
+          os.makedirs(pasta, exist_ok=True)
+          imagens = {
+              "word/media/image2.png": "montagem-circuito.png",
+              "word/media/image3.png": "simulacao-livre.png",
+              "word/media/image4.png": "display-oled.png",
+              "word/media/image5.png": "bibliotecas-wokwi.png",
+          }
+          with zipfile.ZipFile(origem) as documento:
+              for origem_img, destino in imagens.items():
+                  with open(os.path.join(pasta, destino), "wb") as arquivo:
+                      arquivo.write(documento.read(origem_img))
+          PY
+      - name: Versionar capturas no repositório
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add images
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: add Wokwi circuit screenshots"
+            git push
+          fi
